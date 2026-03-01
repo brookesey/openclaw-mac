@@ -41,7 +41,7 @@ fi
 
 OPENCLAW_HOME="$HOME/.openclaw"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MIN_VERSION="2026.1.29"
+MIN_VERSION="2026.2.15"
 
 echo ""
 echo "=========================================="
@@ -108,7 +108,7 @@ if [[ -z "$version_num" ]]; then
     error "Could not parse OpenClaw version from: $openclaw_version"
 fi
 if [[ "$(printf '%s\n' "$MIN_VERSION" "$version_num" | sort -V | head -1)" != "$MIN_VERSION" ]]; then
-    error "OpenClaw version $openclaw_version is below minimum $MIN_VERSION (CVE-2026-25253). Please upgrade."
+    error "OpenClaw version $openclaw_version is below minimum $MIN_VERSION (CVE-2026-25253, GHSA-chf7-jq6g-qrwv). Please upgrade."
 fi
 info "Version $openclaw_version meets minimum requirement ($MIN_VERSION)."
 
@@ -239,6 +239,12 @@ SECRETS_EOF
 chmod 600 "$SECRETS_FILE"
 info "Secrets written to $SECRETS_FILE (mode 600)."
 
+# Write Telegram bot token to its own file (tokenFile approach avoids env var leaks)
+TELEGRAM_TOKEN_FILE="$OPENCLAW_HOME/credentials/telegram-token"
+echo -n "$TELEGRAM_BOT_TOKEN" > "$TELEGRAM_TOKEN_FILE"
+chmod 600 "$TELEGRAM_TOKEN_FILE"
+info "Telegram token written to $TELEGRAM_TOKEN_FILE (mode 600)."
+
 # --- 6. Write OpenClaw config -------------------------------------------------
 
 step "Writing OpenClaw configuration"
@@ -295,8 +301,13 @@ cat > "$CONFIG_FILE" <<CONFIG_EOF
   "channels": {
     "telegram": {
       "enabled": true,
+      "tokenFile": "$OPENCLAW_HOME/credentials/telegram-token",
       "dmPolicy": "pairing",
       "groupPolicy": "allowlist",
+      "groups": {
+        "*": { "requireMention": true }
+      },
+      "configWrites": false,
       "streaming": "off"
     }
   },
@@ -306,7 +317,7 @@ cat > "$CONFIG_FILE" <<CONFIG_EOF
     "port": 18789,
     "auth": {
       "mode": "token",
-      "token": "$OPENCLAW_GATEWAY_TOKEN"
+      "token": "\${OPENCLAW_GATEWAY_TOKEN}"
     },
     "trustedProxies": ["127.0.0.1"],
     "tailscale": {
@@ -322,6 +333,10 @@ cat > "$CONFIG_FILE" <<CONFIG_EOF
     }
   },
   "tools": {
+    "deny": ["gateway", "cron", "sessions_spawn", "sessions_send"],
+    "fs": {
+      "workspaceOnly": true
+    },
     "web": {
       "search": {
         "enabled": true,

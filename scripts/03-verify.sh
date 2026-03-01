@@ -36,7 +36,7 @@ export NVM_DIR="$HOME/.nvm"
 # --- 1. OpenClaw version check -----------------------------------------------
 
 echo "--- OpenClaw Version ---"
-MIN_VERSION="2026.1.29"
+MIN_VERSION="2026.2.15"
 
 if command -v openclaw &>/dev/null; then
     oc_version=$(openclaw --version 2>/dev/null || echo "unknown")
@@ -45,7 +45,7 @@ if command -v openclaw &>/dev/null; then
         if [[ "$(printf '%s\n' "$MIN_VERSION" "$version_num" | sort -V | head -1)" == "$MIN_VERSION" ]]; then
             pass "OpenClaw version $oc_version (>= $MIN_VERSION)"
         else
-            fail "OpenClaw version $oc_version is below minimum $MIN_VERSION (CVE-2026-25253)"
+            fail "OpenClaw version $oc_version is below minimum $MIN_VERSION (CVE-2026-25253, GHSA-chf7-jq6g-qrwv)"
         fi
     else
         warn "Could not parse OpenClaw version: $oc_version"
@@ -169,6 +169,36 @@ if [[ -f "$CONFIG_FILE" ]]; then
     else
         warn "Log redaction is not configured"
     fi
+
+    if grep -q '"deny"' "$CONFIG_FILE"; then
+        pass "Tool deny list is configured"
+    else
+        fail "No tool deny list — bot can modify its own config (add gateway, cron, sessions_spawn, sessions_send)"
+    fi
+
+    if grep -q '"workspaceOnly"' "$CONFIG_FILE"; then
+        pass "Filesystem restricted to workspace only"
+    else
+        warn "Filesystem not restricted to workspace — bot can access files outside workspace"
+    fi
+
+    if grep -q '"configWrites".*false' "$CONFIG_FILE"; then
+        pass "Telegram configWrites disabled"
+    else
+        fail "configWrites not disabled — Telegram events could modify config"
+    fi
+
+    if grep -q '"requireMention"' "$CONFIG_FILE"; then
+        pass "Group messages require @mention"
+    else
+        warn "Group requireMention not set — bot responds to all group messages"
+    fi
+
+    if grep -q '"tokenFile"' "$CONFIG_FILE"; then
+        pass "Telegram token loaded via tokenFile (not env var)"
+    else
+        warn "Telegram token not using tokenFile — env vars can leak in process listings"
+    fi
 else
     fail "Config file not found at $CONFIG_FILE"
 fi
@@ -207,6 +237,18 @@ if [[ -f "$SECRETS_FILE" ]]; then
     fi
 else
     fail "secrets.env not found"
+fi
+
+TELEGRAM_TOKEN_FILE="$OPENCLAW_HOME/credentials/telegram-token"
+if [[ -f "$TELEGRAM_TOKEN_FILE" ]]; then
+    tg_perms=$(stat -f "%Lp" "$TELEGRAM_TOKEN_FILE")
+    if [[ "$tg_perms" == "600" ]]; then
+        pass "telegram-token permissions: $tg_perms (600)"
+    else
+        fail "telegram-token permissions: $tg_perms (expected 600)"
+    fi
+else
+    warn "telegram-token file not found (Telegram token may be using env var instead)"
 fi
 
 WRAPPER_SCRIPT="$OPENCLAW_HOME/start.sh"
@@ -329,6 +371,12 @@ echo "  [$(grep -q '"claude-opus-4-6"' "$CONFIG_FILE" 2>/dev/null && echo 'x' ||
 echo "  [ ] API spending limits set with provider (verify in Anthropic dashboard)"
 echo "  [$(grep -q '"redactSensitive"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Log redaction on"
 echo "  [$(stat -f "%Lp" "$SECRETS_FILE" 2>/dev/null | grep -q '600' && echo 'x' || echo ' ')] All credentials secured (permissions 600)"
+echo "  [$(grep -q '"deny"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Tool deny list configured (gateway, cron, sessions)"
+echo "  [$(grep -q '"workspaceOnly"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Filesystem restricted to workspace"
+echo "  [$(grep -q '"configWrites".*false' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Telegram configWrites disabled"
+echo "  [$(grep -q '"requireMention"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Group messages require @mention"
+echo "  [$(grep -q '"tokenFile"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Telegram token via tokenFile"
+echo "  [ ] Telegram Privacy Mode enabled (verify in @BotFather: /mybots > Bot Settings > Group Privacy)"
 echo "  [x] No ClawHub skills installed (clean install)"
 echo "  [x] openclaw security audit --deep run (just ran above)"
 echo ""

@@ -40,7 +40,7 @@ bash scripts/01a-dev-setup.sh
 Switch to the `openclaw` user and run the setup script. This installs nvm, Node.js 22, OpenClaw, configures secrets, writes the config, and locks down permissions.
 
 ```bash
-su - openclaw
+sudo -u openclaw -i
 bash /usr/local/share/openclaw/scripts/02-openclaw-setup.sh
 ```
 
@@ -63,7 +63,7 @@ bash scripts/01b-install-daemon.sh
 Switch to the `openclaw` user and run the verification script.
 
 ```bash
-su - openclaw
+sudo -u openclaw -i
 bash /usr/local/share/openclaw/scripts/03-verify.sh
 ```
 
@@ -78,7 +78,7 @@ This checks every item from the security checklist and prints a pass/fail summar
 3. Approve it:
 
 ```bash
-su - openclaw -c 'openclaw pairing approve telegram <CODE>'
+sudo -u openclaw openclaw pairing approve telegram <CODE>
 ```
 
 ### Edison's Personality
@@ -98,14 +98,14 @@ security find-generic-password -s "openclaw-user-password" -w
 The dashboard is available locally at `http://127.0.0.1:18789/`. On first visit, you'll be prompted for the gateway token. Retrieve it from your admin account:
 
 ```bash
-sudo su - openclaw -c 'grep OPENCLAW_GATEWAY_TOKEN ~/.openclaw/secrets.env'
+sudo -u openclaw grep OPENCLAW_GATEWAY_TOKEN ~openclaw/.openclaw/secrets.env
 ```
 
 Paste the token value into the dashboard's Control UI settings. Then approve the device:
 
 ```bash
-sudo su - openclaw -c 'openclaw devices list'        # find the pending request ID
-sudo su - openclaw -c 'openclaw devices approve <ID>'
+sudo -u openclaw openclaw devices list        # find the pending request ID
+sudo -u openclaw openclaw devices approve <ID>
 ```
 
 ### Remote Access via Tailscale
@@ -131,16 +131,22 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/ai.openclaw.gateway.plist
 
 ## Security Checklist
 
-- Latest version (>= 2026.1.29)
+- Latest version (>= 2026.2.15, covers CVE-2026-25253 + GHSA-chf7-jq6g-qrwv)
 - Dedicated non-admin macOS user (`openclaw`)
 - FileVault enabled
 - macOS firewall on (stealth mode)
 - Gateway bound to loopback (127.0.0.1)
-- Token auth on gateway
+- Token auth on gateway (via env var reference, not plaintext)
 - Tailscale Serve (tailnet-only, no Funnel)
 - DMs set to pairing mode
+- Tool deny list configured (`gateway`, `cron`, `sessions_spawn`, `sessions_send`)
+- Filesystem restricted to workspace only
+- Telegram `configWrites` disabled
+- Group messages require `@mention`
+- Telegram token loaded via `tokenFile` (not env var)
+- Telegram Privacy Mode enabled (verify in @BotFather)
 - Claude Opus 4.6 (strongest prompt-injection resistance)
 - Log redaction enabled
-- Credentials in permissions-locked file (mode 600)
+- Credentials in permissions-locked files (mode 600)
 - No ClawHub skills installed
 - `openclaw security audit --deep` run regularly
