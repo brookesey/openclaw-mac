@@ -261,13 +261,21 @@ fi
 echo ""
 echo "--- OpenClaw Doctor ---"
 if command -v openclaw &>/dev/null; then
-    openclaw doctor 2>&1 || warn "openclaw doctor reported issues (see above)"
+    if openclaw doctor 2>&1; then
+        pass "openclaw doctor passed"
+    else
+        fail "openclaw doctor reported issues (see above)"
+    fi
 fi
 
 echo ""
 echo "--- OpenClaw Security Audit ---"
 if command -v openclaw &>/dev/null; then
-    openclaw security audit --deep 2>&1 || warn "Security audit reported issues (see above)"
+    if openclaw security audit --deep 2>&1; then
+        pass "openclaw security audit --deep passed"
+    else
+        fail "Security audit reported issues (see above)"
+    fi
 fi
 
 # --- 11. Channel status -------------------------------------------------------
@@ -275,7 +283,11 @@ fi
 echo ""
 echo "--- Channel Status ---"
 if command -v openclaw &>/dev/null; then
-    openclaw channels status --probe 2>&1 || warn "Channel probe reported issues (see above)"
+    if openclaw channels status --probe 2>&1; then
+        pass "Telegram channel is connected"
+    else
+        fail "Channel probe reported issues (see above)"
+    fi
 fi
 
 # --- Summary ------------------------------------------------------------------
@@ -294,6 +306,11 @@ if [[ $FAIL -eq 0 ]]; then
     echo -e "${GREEN}All checks passed!${NC}"
 else
     echo -e "${RED}$FAIL check(s) failed. Review the output above and fix before using OpenClaw.${NC}"
+fi
+
+EXIT_CODE=0
+if [[ $FAIL -gt 0 ]]; then
+    EXIT_CODE=1
 fi
 
 echo ""
@@ -315,3 +332,5 @@ echo "  [$(stat -f "%Lp" "$SECRETS_FILE" 2>/dev/null | grep -q '600' && echo 'x'
 echo "  [x] No ClawHub skills installed (clean install)"
 echo "  [x] openclaw security audit --deep run (just ran above)"
 echo ""
+
+exit $EXIT_CODE

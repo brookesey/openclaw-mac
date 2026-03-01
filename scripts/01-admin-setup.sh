@@ -45,7 +45,7 @@ echo ""
 # --- 1. FileVault (Full-Disk Encryption) -------------------------------------
 
 info "Checking FileVault status..."
-fv_status=$(fdesetup status 2>/dev/null || true)
+fv_status=$(fdesetup status) || error "Failed to check FileVault status."
 
 if echo "$fv_status" | grep -q "FileVault is On"; then
     info "FileVault is already enabled."
@@ -63,7 +63,7 @@ fi
 # --- 2. macOS Firewall --------------------------------------------------------
 
 info "Checking firewall status..."
-fw_status=$(sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null || true)
+fw_status=$(sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate) || error "Failed to check firewall status."
 
 if echo "$fw_status" | grep -q "enabled"; then
     info "Firewall is already enabled."
@@ -74,7 +74,7 @@ else
 fi
 
 # Enable stealth mode (don't respond to pings or connection attempts)
-stealth_status=$(sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null || true)
+stealth_status=$(sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode) || error "Failed to check stealth mode status."
 if echo "$stealth_status" | grep -q "enabled"; then
     info "Stealth mode is already enabled."
 else
@@ -121,7 +121,7 @@ if dscl . -read /Users/openclaw &>/dev/null 2>&1; then
 
     # Verify it's not an admin
     if dscl . -read /Groups/admin GroupMembership 2>/dev/null | grep -qw "openclaw"; then
-        warn "User 'openclaw' is an admin! For security, it should be a standard user."
+        error "User 'openclaw' is an admin. For security, it must be a standard user. Remove it from the admin group first."
     else
         info "User 'openclaw' is a standard (non-admin) user. Good."
     fi

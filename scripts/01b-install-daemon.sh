@@ -91,9 +91,7 @@ sleep 2
 if sudo launchctl print system/ai.openclaw.gateway &>/dev/null 2>&1; then
     info "Daemon is running."
 else
-    warn "Daemon may not have started yet. Check logs at:"
-    echo "  $LOG_DIR/gateway.log"
-    echo "  $LOG_DIR/gateway.err"
+    error "Daemon failed to start. Check logs at: $LOG_DIR/gateway.log and $LOG_DIR/gateway.err"
 fi
 
 # --- Summary ------------------------------------------------------------------
