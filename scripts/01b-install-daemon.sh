@@ -49,7 +49,7 @@ PLIST_SOURCE="$OPENCLAW_USER_HOME/.openclaw/ai.openclaw.gateway.plist"
 PLIST_DEST="/Library/LaunchDaemons/ai.openclaw.gateway.plist"
 LOG_DIR="/var/log/openclaw"
 
-if [[ ! -f "$PLIST_SOURCE" ]]; then
+if ! sudo test -f "$PLIST_SOURCE"; then
     error "LaunchDaemon plist not found at $PLIST_SOURCE. Run 02-openclaw-setup.sh first."
 fi
 
