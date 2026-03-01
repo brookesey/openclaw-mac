@@ -128,9 +128,19 @@ if dscl . -read /Users/openclaw &>/dev/null 2>&1; then
 else
     info "Creating standard user 'openclaw'..."
     echo ""
-    echo "You will be prompted to set a password for the 'openclaw' user."
-    echo "Choose a strong password and save it in your password manager."
+    echo "Set a password for the 'openclaw' user:"
+    read -rsp "> " openclaw_password
     echo ""
+    echo "Confirm password:"
+    read -rsp "> " openclaw_password_confirm
+    echo ""
+
+    if [[ "$openclaw_password" != "$openclaw_password_confirm" ]]; then
+        error "Passwords do not match."
+    fi
+    if [[ -z "$openclaw_password" ]]; then
+        error "Password cannot be empty."
+    fi
 
     # Find an available UniqueID (macOS user IDs start at 501)
     last_id=$(dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1)
@@ -140,7 +150,19 @@ else
         -fullName "OpenClaw" \
         -shell /bin/zsh \
         -UID "$new_id" \
-        -password -
+        -password "$openclaw_password"
+
+    # Save password to the admin user's Keychain
+    security add-generic-password \
+        -a "$(whoami)" \
+        -s "openclaw-user-password" \
+        -l "OpenClaw macOS user password" \
+        -w "$openclaw_password"
+    info "Password saved to Keychain (service: openclaw-user-password)."
+
+    # Clear the password from memory
+    openclaw_password=""
+    openclaw_password_confirm=""
 
     info "User 'openclaw' created as a standard (non-admin) user."
 fi
