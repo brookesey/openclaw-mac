@@ -9,6 +9,7 @@ Automated, security-first setup for OpenClaw on a Mac Mini. Based on [this guide
 - A [Tailscale](https://tailscale.com/) account
 - An [Anthropic API key](https://console.anthropic.com/)
 - A Telegram bot token (create one via [@BotFather](https://t.me/BotFather) on Telegram)
+- A [Gemini API key](https://aistudio.google.com/apikey) (optional, for web search)
 
 ## Setup Steps
 
@@ -46,6 +47,7 @@ bash /usr/local/share/openclaw/scripts/02-openclaw-setup.sh
 You'll be prompted for:
 - Your Anthropic API key
 - Your Telegram bot token
+- Your Gemini API key (optional — enables web search)
 
 ### Step 3: Install the Daemon
 
@@ -101,6 +103,9 @@ The dashboard is accessible at `https://<your-machine-name>.<tailnet>/` from any
 # View logs
 tail -f /var/log/openclaw/gateway.log
 tail -f /var/log/openclaw/gateway.err
+
+# Restart (to pick up config/secret changes)
+sudo launchctl kickstart -k system/ai.openclaw.gateway
 
 # Stop
 sudo launchctl bootout system/ai.openclaw.gateway
