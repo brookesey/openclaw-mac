@@ -5,10 +5,11 @@
 # This script:
 #   1. Enables FileVault (full-disk encryption)
 #   2. Enables macOS firewall with stealth mode
-#   3. Installs Homebrew (if not present)
-#   4. Installs Tailscale
-#   5. Creates a non-admin "openclaw" user account
-#   6. Copies scripts to a shared location accessible by all users
+#   3. Disables system sleep (server must stay awake for Telegram)
+#   4. Installs Homebrew (if not present)
+#   5. Installs Tailscale
+#   6. Creates a non-admin "openclaw" user account
+#   7. Copies scripts to a shared location accessible by all users
 # =============================================================================
 
 set -euo pipefail
@@ -86,7 +87,13 @@ else
     info "Stealth mode enabled."
 fi
 
-# --- 3. Homebrew --------------------------------------------------------------
+# --- 3. Disable System Sleep --------------------------------------------------
+
+info "Disabling system sleep (server must stay awake for Telegram)..."
+sudo pmset -a sleep 0 disablesleep 1
+info "System sleep disabled. Display will still lock, but CPU and network stay active."
+
+# --- 4. Homebrew --------------------------------------------------------------
 
 info "Checking for Homebrew..."
 if ! command -v brew &>/dev/null && [[ ! -f /opt/homebrew/bin/brew ]] && [[ ! -f /usr/local/bin/brew ]]; then
@@ -114,7 +121,7 @@ if ! grep -q 'brew shellenv' "$HOME/.zprofile" 2>/dev/null; then
     info "Added Homebrew to PATH in ~/.zprofile"
 fi
 
-# --- 4. Tailscale -------------------------------------------------------------
+# --- 5. Tailscale -------------------------------------------------------------
 
 info "Checking for Tailscale..."
 if brew list --cask tailscale &>/dev/null 2>&1; then
@@ -129,7 +136,7 @@ echo ""
 warn "After this script completes, open Tailscale from Applications and log in."
 warn "You can also run: open -a Tailscale"
 
-# --- 5. Create 'openclaw' Standard User --------------------------------------
+# --- 6. Create 'openclaw' Standard User --------------------------------------
 
 info "Checking for 'openclaw' user..."
 if dscl . -read /Users/openclaw &>/dev/null 2>&1; then
@@ -183,7 +190,7 @@ else
     info "User 'openclaw' created as a standard (non-admin) user."
 fi
 
-# --- 6. Copy scripts to shared location ---------------------------------------
+# --- 7. Copy scripts to shared location ---------------------------------------
 
 info "Copying scripts to $SHARED_SCRIPTS_DIR..."
 sudo mkdir -p "$SHARED_SCRIPTS_DIR"
