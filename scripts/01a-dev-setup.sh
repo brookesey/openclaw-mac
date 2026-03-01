@@ -47,6 +47,16 @@ fi
 
 # --- Claude Code CLI ----------------------------------------------------------
 
+# Ensure ~/.local/bin is on PATH (where Claude Code installs to)
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+if ! grep -q '.local/bin' "$HOME/.zprofile" 2>/dev/null; then
+    echo >> "$HOME/.zprofile"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zprofile"
+    info "Added ~/.local/bin to PATH in ~/.zprofile"
+fi
+
 info "Checking for Claude Code..."
 if command -v claude &>/dev/null; then
     info "Claude Code is already installed: $(claude --version 2>/dev/null || echo 'installed')"
