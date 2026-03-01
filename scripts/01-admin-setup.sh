@@ -91,10 +91,23 @@ else
     warn "Homebrew not found. Installing..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-    # Add Homebrew to PATH for Apple Silicon
+    # Add Homebrew to PATH for current session and persist for future sessions
     if [[ -f /opt/homebrew/bin/brew ]]; then
-        eval "$(/opt/homebrew/bin/brew shellenv)"
+        BREW_BIN="/opt/homebrew/bin/brew"
+    elif [[ -f /usr/local/bin/brew ]]; then
+        BREW_BIN="/usr/local/bin/brew"
+    else
+        error "Homebrew installed but brew binary not found."
     fi
+
+    eval "$("$BREW_BIN" shellenv)"
+
+    if ! grep -q 'brew shellenv' "$HOME/.zprofile" 2>/dev/null; then
+        echo >> "$HOME/.zprofile"
+        echo "eval \"\$(${BREW_BIN} shellenv)\"" >> "$HOME/.zprofile"
+        info "Added Homebrew to PATH in ~/.zprofile"
+    fi
+
     info "Homebrew installed."
 fi
 
