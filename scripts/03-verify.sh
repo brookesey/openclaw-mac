@@ -125,7 +125,18 @@ else
     warn "Stealth mode status unknown (may need sudo to check)"
 fi
 
-# --- 6. OpenClaw config check ------------------------------------------------
+# --- 6. Power Management check -----------------------------------------------
+
+echo ""
+echo "--- Power Management ---"
+sleep_val=$(pmset -g 2>/dev/null | grep '^ sleep' | awk '{print $2}')
+if [[ "$sleep_val" == "0" ]]; then
+    pass "System sleep is disabled (sleep = 0)"
+else
+    fail "System sleep is set to $sleep_val (expected 0 — run: sudo pmset -a sleep 0 disablesleep 1)"
+fi
+
+# --- 7. OpenClaw config check ------------------------------------------------
 
 echo ""
 echo "--- OpenClaw Configuration ---"
@@ -203,7 +214,7 @@ else
     fail "Config file not found at $CONFIG_FILE"
 fi
 
-# --- 7. File permissions check ------------------------------------------------
+# --- 8. File permissions check ------------------------------------------------
 
 echo ""
 echo "--- File Permissions ---"
@@ -263,7 +274,7 @@ else
     fail "start.sh not found"
 fi
 
-# --- 8. Tailscale check ------------------------------------------------------
+# --- 9. Tailscale check ------------------------------------------------------
 
 echo ""
 echo "--- Tailscale ---"
@@ -280,7 +291,7 @@ else
     fail "Tailscale is not installed"
 fi
 
-# --- 9. LaunchDaemon check ----------------------------------------------------
+# --- 10. LaunchDaemon check ---------------------------------------------------
 
 echo ""
 echo "--- LaunchDaemon ---"
@@ -298,7 +309,7 @@ else
     warn "LaunchDaemon may not be loaded (may need sudo to check)"
 fi
 
-# --- 10. OpenClaw doctor and security audit -----------------------------------
+# --- 11. OpenClaw doctor and security audit -----------------------------------
 
 echo ""
 echo "--- OpenClaw Doctor ---"
@@ -320,7 +331,7 @@ if command -v openclaw &>/dev/null; then
     fi
 fi
 
-# --- 11. Channel status -------------------------------------------------------
+# --- 12. Channel status -------------------------------------------------------
 
 echo ""
 echo "--- Channel Status ---"
@@ -362,6 +373,7 @@ echo "  [$(command -v openclaw &>/dev/null && echo 'x' || echo ' ')] Latest vers
 echo "  [$(dscl . -read /Groups/admin GroupMembership 2>/dev/null | grep -qw "$(whoami)" && echo ' ' || echo 'x')] Dedicated non-admin macOS user"
 echo "  [$(fdesetup status 2>/dev/null | grep -q 'On' && echo 'x' || echo ' ')] FileVault enabled"
 echo "  [$(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null | grep -qi 'enabled' && echo 'x' || echo ' ')] macOS firewall on"
+echo "  [$(pmset -g 2>/dev/null | grep '^ sleep' | awk '{print $2}' | grep -q '^0$' && echo 'x' || echo ' ')] System sleep disabled"
 echo "  [$(grep -q '"loopback"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Gateway bound to 127.0.0.1"
 echo "  [$(grep -q '"token"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Token auth on gateway"
 echo "  [$(grep -q '"serve"' "$CONFIG_FILE" 2>/dev/null && echo 'x' || echo ' ')] Tailscale in serve mode (tailnet-only)"
