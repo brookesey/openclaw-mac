@@ -93,9 +93,24 @@ The `openclaw` user's password is saved in the admin user's Keychain during setu
 security find-generic-password -s "openclaw-user-password" -w
 ```
 
+### Accessing the Dashboard
+
+The dashboard is available locally at `http://127.0.0.1:18789/`. On first visit, you'll be prompted for the gateway token. Retrieve it from your admin account:
+
+```bash
+sudo su - openclaw -c 'grep OPENCLAW_GATEWAY_TOKEN ~/.openclaw/secrets.env'
+```
+
+Paste the token value into the dashboard's Control UI settings. Then approve the device:
+
+```bash
+sudo su - openclaw -c 'openclaw devices list'        # find the pending request ID
+sudo su - openclaw -c 'openclaw devices approve <ID>'
+```
+
 ### Remote Access via Tailscale
 
-The dashboard is accessible at `https://<your-machine-name>.<tailnet>/` from any device on your Tailscale network.
+The dashboard is also accessible at `https://<your-machine-name>.<tailnet>/` from any device on your Tailscale network.
 
 ## Managing the Daemon
 
