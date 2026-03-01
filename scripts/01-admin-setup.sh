@@ -85,30 +85,29 @@ fi
 # --- 3. Homebrew --------------------------------------------------------------
 
 info "Checking for Homebrew..."
-if command -v brew &>/dev/null; then
-    info "Homebrew is already installed."
-else
+if ! command -v brew &>/dev/null && [[ ! -f /opt/homebrew/bin/brew ]] && [[ ! -f /usr/local/bin/brew ]]; then
     warn "Homebrew not found. Installing..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-    # Add Homebrew to PATH for current session and persist for future sessions
-    if [[ -f /opt/homebrew/bin/brew ]]; then
-        BREW_BIN="/opt/homebrew/bin/brew"
-    elif [[ -f /usr/local/bin/brew ]]; then
-        BREW_BIN="/usr/local/bin/brew"
-    else
-        error "Homebrew installed but brew binary not found."
-    fi
-
-    eval "$("$BREW_BIN" shellenv)"
-
-    if ! grep -q 'brew shellenv' "$HOME/.zprofile" 2>/dev/null; then
-        echo >> "$HOME/.zprofile"
-        echo "eval \"\$(${BREW_BIN} shellenv)\"" >> "$HOME/.zprofile"
-        info "Added Homebrew to PATH in ~/.zprofile"
-    fi
-
     info "Homebrew installed."
+else
+    info "Homebrew is already installed."
+fi
+
+# Ensure brew is on PATH for current session and future sessions
+if [[ -f /opt/homebrew/bin/brew ]]; then
+    BREW_BIN="/opt/homebrew/bin/brew"
+elif [[ -f /usr/local/bin/brew ]]; then
+    BREW_BIN="/usr/local/bin/brew"
+else
+    error "Homebrew binary not found at /opt/homebrew or /usr/local."
+fi
+
+eval "$("$BREW_BIN" shellenv)"
+
+if ! grep -q 'brew shellenv' "$HOME/.zprofile" 2>/dev/null; then
+    echo >> "$HOME/.zprofile"
+    echo "eval \"\$(${BREW_BIN} shellenv)\"" >> "$HOME/.zprofile"
+    info "Added Homebrew to PATH in ~/.zprofile"
 fi
 
 # --- 4. Tailscale -------------------------------------------------------------
