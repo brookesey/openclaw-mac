@@ -119,6 +119,7 @@ step "Setting up OpenClaw directory"
 mkdir -p "$OPENCLAW_HOME"
 mkdir -p "$OPENCLAW_HOME/credentials"
 mkdir -p "$OPENCLAW_HOME/agents"
+mkdir -p "$OPENCLAW_HOME/workspace"
 
 # --- 5. Collect and store secrets ---------------------------------------------
 
@@ -186,41 +187,75 @@ if [[ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
     source "$SECRETS_FILE"
 fi
 
-cat > "$CONFIG_FILE" <<'CONFIG_EOF'
+cat > "$CONFIG_FILE" <<CONFIG_EOF
 {
-  "gateway": {
-    "mode": "local",
-    "bind": "loopback",
-    "port": 18789,
-    "auth": {
-      "mode": "token"
-    },
-    "tailscale": {
-      "mode": "serve",
-      "resetOnExit": true
-    }
-  },
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "dmPolicy": "pairing",
-      "groups": {
-        "*": {
-          "requireMention": true
-        }
+  "auth": {
+    "profiles": {
+      "anthropic:default": {
+        "provider": "anthropic",
+        "mode": "api_key"
       }
     }
   },
   "agents": {
     "defaults": {
       "model": {
-        "provider": "anthropic",
-        "model": "claude-opus-4-6"
+        "primary": "anthropic/claude-opus-4-6"
+      },
+      "models": {
+        "anthropic/claude-sonnet-4-6": {},
+        "anthropic/claude-opus-4-6": {}
+      },
+      "workspace": "$HOME/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
       }
     }
   },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
   "session": {
     "dmScope": "per-channel-peer"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist",
+      "streaming": "off"
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "bind": "loopback",
+    "port": 18789,
+    "auth": {
+      "mode": "token",
+      "token": "$OPENCLAW_GATEWAY_TOKEN"
+    },
+    "trustedProxies": ["127.0.0.1"],
+    "tailscale": {
+      "mode": "serve",
+      "resetOnExit": true
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true
+      }
+    }
   },
   "tools": {
     "exec": {
@@ -340,12 +375,14 @@ chmod 600 "$SECRETS_FILE"
 chmod 700 "$WRAPPER_SCRIPT"
 chmod 700 "$OPENCLAW_HOME/credentials"
 chmod 700 "$OPENCLAW_HOME/agents"
+chmod 700 "$OPENCLAW_HOME/workspace"
 
 info "Permissions set:"
 echo "  drwx------  ~/.openclaw/"
 echo "  -rw-------  ~/.openclaw/openclaw.json"
 echo "  -rw-------  ~/.openclaw/secrets.env"
 echo "  -rwx------  ~/.openclaw/start.sh"
+echo "  drwx------  ~/.openclaw/workspace/"
 
 # --- 10. Run security audit ---------------------------------------------------
 
