@@ -40,7 +40,7 @@ Switch to the `openclaw` user and run the setup script. This installs nvm, Node.
 
 ```bash
 su - openclaw
-bash /path/to/scripts/02-openclaw-setup.sh
+bash /usr/local/share/openclaw/scripts/02-openclaw-setup.sh
 ```
 
 You'll be prompted for:
@@ -62,7 +62,7 @@ Switch to the `openclaw` user and run the verification script.
 
 ```bash
 su - openclaw
-bash /path/to/scripts/03-verify.sh
+bash /usr/local/share/openclaw/scripts/03-verify.sh
 ```
 
 This checks every item from the security checklist and prints a pass/fail summary.

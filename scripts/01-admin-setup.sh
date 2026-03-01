@@ -8,6 +8,7 @@
 #   3. Installs Homebrew (if not present)
 #   4. Installs Tailscale
 #   5. Creates a non-admin "openclaw" user account
+#   6. Copies scripts to a shared location accessible by all users
 # =============================================================================
 
 set -euo pipefail
@@ -20,6 +21,9 @@ NC='\033[0m' # No Color
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SHARED_SCRIPTS_DIR="/usr/local/share/openclaw/scripts"
 
 # --- Pre-flight checks -------------------------------------------------------
 
@@ -179,6 +183,30 @@ else
     info "User 'openclaw' created as a standard (non-admin) user."
 fi
 
+# --- 6. Copy scripts to shared location ---------------------------------------
+
+info "Copying scripts to $SHARED_SCRIPTS_DIR..."
+sudo mkdir -p "$SHARED_SCRIPTS_DIR"
+sudo cp -R "$SCRIPT_DIR/." "$SHARED_SCRIPTS_DIR/"
+sudo chown -R root:wheel "$SHARED_SCRIPTS_DIR"
+sudo find "$SHARED_SCRIPTS_DIR" -type d -exec chmod 755 {} \;
+sudo find "$SHARED_SCRIPTS_DIR" -type f -exec chmod 644 {} \;
+info "Scripts copied. The openclaw user can access them at $SHARED_SCRIPTS_DIR"
+
+# Add a login reminder for the openclaw user
+OPENCLAW_HOME=$(dscl . -read /Users/openclaw NFSHomeDirectory 2>/dev/null | awk '{print $2}')
+if [[ -n "$OPENCLAW_HOME" ]] && ! grep -q 'OpenClaw setup scripts' "$OPENCLAW_HOME/.zprofile" 2>/dev/null; then
+    sudo tee -a "$OPENCLAW_HOME/.zprofile" > /dev/null <<'LOGINMSG'
+
+# OpenClaw login reminder
+echo ""
+echo "OpenClaw setup scripts are at: /usr/local/share/openclaw/scripts/"
+echo ""
+LOGINMSG
+    sudo chown openclaw:staff "$OPENCLAW_HOME/.zprofile"
+    info "Added login reminder to openclaw user's ~/.zprofile"
+fi
+
 # --- Summary ------------------------------------------------------------------
 
 echo ""
@@ -190,6 +218,6 @@ info "Next steps:"
 echo "  1. Open Tailscale and log in:  open -a Tailscale"
 echo "  2. (Optional) Install dev tools:  bash scripts/01a-dev-setup.sh"
 echo "  3. Switch to the openclaw user:  su - openclaw"
-echo "  4. Run the OpenClaw setup script:  bash /path/to/scripts/02-openclaw-setup.sh"
+echo "  4. Run the OpenClaw setup script:  bash $SHARED_SCRIPTS_DIR/02-openclaw-setup.sh"
 echo "  5. Switch back to admin and install the daemon:  bash scripts/01b-install-daemon.sh"
 echo ""
