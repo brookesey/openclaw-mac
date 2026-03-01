@@ -83,6 +83,14 @@ su - openclaw -c 'openclaw pairing approve telegram <CODE>'
 
 On your first interaction with the bot, send the contents of `scripts/personality.txt` to set Edison's personality and ground rules.
 
+### Retrieving the OpenClaw User Password
+
+The `openclaw` user's password is saved in the admin user's Keychain during setup. To retrieve it:
+
+```bash
+security find-generic-password -s "openclaw-user-password" -w
+```
+
 ### Remote Access via Tailscale
 
 The dashboard is accessible at `https://<your-machine-name>.<tailnet>/` from any device on your Tailscale network.
