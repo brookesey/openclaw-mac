@@ -173,6 +173,19 @@ if [[ -f "$SECRETS_FILE" ]]; then
         fi
     fi
 
+    # --- Telegram chat ID ---
+    echo "  Telegram chat ID:   ${TELEGRAM_CHAT_ID:-(not set)}"
+    read -rp "  Update? (y/N): " update_chat_id
+    if [[ "$update_chat_id" =~ ^[Yy]$ ]]; then
+        echo "  Enter your Telegram chat ID (get it from @userinfobot on Telegram):"
+        read -rp "  > " new_val
+        if [[ -n "$new_val" ]]; then
+            TELEGRAM_CHAT_ID="$new_val"
+        else
+            warn "  Empty value — keeping existing chat ID."
+        fi
+    fi
+
     # --- Gemini API key ---
     echo "  Gemini API key:     $(mask_secret "${GEMINI_API_KEY:-}")"
     read -rp "  Update? (y/N): " update_gemini
@@ -210,6 +223,13 @@ else
         error "Telegram bot token cannot be empty."
     fi
 
+    echo "Enter your Telegram chat ID (get it from @userinfobot on Telegram):"
+    read -rp "> " TELEGRAM_CHAT_ID
+
+    if [[ -z "$TELEGRAM_CHAT_ID" ]]; then
+        error "Telegram chat ID cannot be empty."
+    fi
+
     echo "Enter your Gemini API key (starts with AIza, or leave blank to skip web search):"
     read -rsp "> " GEMINI_API_KEY
     echo ""
@@ -233,6 +253,7 @@ cat > "$SECRETS_FILE" <<SECRETS_EOF
 export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
 export TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
 export OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN"
+export TELEGRAM_CHAT_ID="$TELEGRAM_CHAT_ID"
 export GEMINI_API_KEY="${GEMINI_API_KEY:-}"
 SECRETS_EOF
 
@@ -283,6 +304,11 @@ cat > "$CONFIG_FILE" <<CONFIG_EOF
       "maxConcurrent": 4,
       "subagents": {
         "maxConcurrent": 8
+      },
+      "heartbeat": {
+        "every": "30m",
+        "target": "telegram",
+        "to": "$TELEGRAM_CHAT_ID"
       }
     }
   },
