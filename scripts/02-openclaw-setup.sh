@@ -99,19 +99,18 @@ else
 fi
 
 # Version check
-openclaw_version=$(openclaw --version 2>/dev/null || echo "unknown")
+openclaw_version=$(openclaw --version) || error "Failed to get OpenClaw version."
 info "OpenClaw version: $openclaw_version"
 
 # Compare versions (simple numeric comparison)
 version_num=$(echo "$openclaw_version" | sed 's/[^0-9.]//g' | head -1)
-if [[ -n "$version_num" ]]; then
-    if [[ "$(printf '%s\n' "$MIN_VERSION" "$version_num" | sort -V | head -1)" != "$MIN_VERSION" ]]; then
-        error "OpenClaw version $openclaw_version is below minimum $MIN_VERSION (CVE-2026-25253). Please upgrade."
-    fi
-    info "Version $openclaw_version meets minimum requirement ($MIN_VERSION)."
-else
-    warn "Could not verify OpenClaw version. Please check manually: openclaw --version"
+if [[ -z "$version_num" ]]; then
+    error "Could not parse OpenClaw version from: $openclaw_version"
 fi
+if [[ "$(printf '%s\n' "$MIN_VERSION" "$version_num" | sort -V | head -1)" != "$MIN_VERSION" ]]; then
+    error "OpenClaw version $openclaw_version is below minimum $MIN_VERSION (CVE-2026-25253). Please upgrade."
+fi
+info "Version $openclaw_version meets minimum requirement ($MIN_VERSION)."
 
 # --- 4. Create OpenClaw directory ---------------------------------------------
 
@@ -353,11 +352,11 @@ echo "  -rwx------  ~/.openclaw/start.sh"
 step "Running security audit"
 
 info "Running: openclaw security audit --deep"
-openclaw security audit --deep || warn "Security audit returned warnings (review output above)."
+openclaw security audit --deep || error "Security audit failed. Review output above and fix issues before continuing."
 
 echo ""
 info "Applying automatic fixes..."
-openclaw security audit --fix || warn "Some fixes could not be applied automatically."
+openclaw security audit --fix || error "Security audit --fix failed. Review output above."
 
 # --- Summary ------------------------------------------------------------------
 
