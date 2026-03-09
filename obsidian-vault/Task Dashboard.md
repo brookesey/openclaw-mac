@@ -6,6 +6,7 @@
 > due today
 > sort by priority
 > hide toolbar
+hide task count
 > ```
 
 > [!info] Upcoming (Next 7 Days)
@@ -14,16 +15,19 @@
 > due before in 7 days
 > sort by due
 > hide toolbar
+hide task count
 > ```
 
-## Faculty
+## Work
 
 > [!work] Active Work Tasks
 > ```tasks
 > not done
 > tag includes #work
+> tag does not include #waiting
 > sort by due
 > hide toolbar
+hide task count
 > ```
 
 > [!work]- Recently Completed Work
@@ -33,26 +37,27 @@
 > done after 7 days ago
 > sort by done reverse
 > hide toolbar
+hide task count
 > ```
-
 ### Waiting on others
 ```tasks
 not done
-tag includes #work
-(description includes [[)
-group by function task.description.match(/\[\[([^\]]+)\]\]/)?.[0] || "Unassigned"
+tag includes #waiting
 sort by due
+group by function task.description.match(/\[\[People\/[^\]]+\]\]/)?.[0] || "Unassigned"
 hide toolbar
+hide task count
 ```
-
 ## Personal
 
 > [!personal] Active Personal Tasks
 > ```tasks
 > not done
 > tag includes #personal
+> tag does not include #waiting
 > sort by due
 > hide toolbar
+hide task count
 > ```
 
 > [!personal]- Recently Completed Personal
@@ -62,4 +67,5 @@ hide toolbar
 > done after 7 days ago
 > sort by done reverse
 > hide toolbar
+hide task count
 > ```
