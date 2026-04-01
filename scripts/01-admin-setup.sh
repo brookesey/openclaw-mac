@@ -124,7 +124,7 @@ fi
 # --- 5. Tailscale -------------------------------------------------------------
 
 info "Checking for Tailscale..."
-if brew list --cask tailscale &>/dev/null 2>&1; then
+if brew list --cask tailscale &>/dev/null 2>&1 || [[ -f /usr/local/bin/tailscale ]]; then
     info "Tailscale is already installed."
 else
     info "Installing Tailscale..."
